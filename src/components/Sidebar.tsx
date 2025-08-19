@@ -3,6 +3,7 @@ import {
   Drawer, 
   List, 
   ListItem, 
+  ListItemButton,
   ListItemIcon, 
   ListItemText, 
   Divider,
@@ -23,6 +24,7 @@ import {
   Download as DownloadIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useTabs } from '../contexts/TabsContext';
 
 interface SidebarProps {
   open: boolean;
@@ -33,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { addTab } = useTabs();
 
   const menuItems = [
     { text: 'Home', icon: <HomeIcon />, path: '/' },
@@ -54,8 +57,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   };
 
   const handleBookmarkClick = (url: string) => {
-    // This would be handled by the Browser component
-    window.location.href = url;
+    // Open bookmark in a new tab and navigate to main browser view
+    addTab(url);
+    navigate('/');
+    if (isMobile) onClose();
   };
 
   return (
@@ -93,20 +98,21 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
       
       <List>
         {menuItems.map((item) => (
-          <ListItem 
-            button 
-            key={item.text}
-            onClick={() => handleNavigation(item.path)}
-            sx={{
-              '&:hover': {
-                backgroundColor: 'action.hover',
-              },
-            }}
-          >
-            <ListItemIcon sx={{ color: 'text.primary' }}>
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText primary={item.text} />
+          <ListItem disablePadding key={item.text}>
+            <ListItemButton
+              onClick={() => handleNavigation(item.path)}
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
+                borderRadius: 1,
+              }}
+            >
+              <ListItemIcon sx={{ color: 'text.primary' }}>
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText primary={item.text} />
+            </ListItemButton>
           </ListItem>
         ))}
       </List>
@@ -120,28 +126,27 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
         </Typography>
         <List dense>
           {bookmarks.map((bookmark, index) => (
-            <ListItem 
-              button 
-              key={index}
-              onClick={() => handleBookmarkClick(bookmark.url)}
-              sx={{
-                borderRadius: 1,
-                mb: 0.5,
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 32 }}>
-                <FolderIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText 
-                primary={bookmark.name} 
-                primaryTypographyProps={{ variant: 'body2' }}
-                secondary={bookmark.url}
-                secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
-                sx={{ my: 0 }}
-              />
+            <ListItem disablePadding key={index} sx={{ mb: 0.5 }}>
+              <ListItemButton
+                onClick={() => handleBookmarkClick(bookmark.url)}
+                sx={{
+                  borderRadius: 1,
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 32 }}>
+                  <FolderIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary={bookmark.name} 
+                  primaryTypographyProps={{ variant: 'body2' }}
+                  secondary={bookmark.url}
+                  secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
+                  sx={{ my: 0 }}
+                />
+              </ListItemButton>
             </ListItem>
           ))}
         </List>

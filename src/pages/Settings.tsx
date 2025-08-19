@@ -16,10 +16,7 @@ import {
   Button,
   SelectChangeEvent
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-
 const Settings: React.FC = () => {
-  const theme = useTheme();
   const [darkMode, setDarkMode] = useState(true);
   const [searchEngine, setSearchEngine] = useState('google');
   const [homePage, setHomePage] = useState('https://www.google.com');
