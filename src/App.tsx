@@ -3,13 +3,16 @@ import { Box, styled, CircularProgress } from '@mui/material';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { TabsProvider, useTabs } from './contexts/TabsContext';
-import TabBar from './components/TabBar';
-import TabContent from './components/TabContent';
+import Header from './components/Header';
+import TabContent, { TabContentHandle } from './components/TabContent';
 import Sidebar from './components/Sidebar';
+import { useTheme } from './contexts/ThemeContext';
+import { useRef } from 'react';
 
 // Lazy load components
 const Settings = lazy(() => import('./pages/Settings'));
 const Bookmarks = lazy(() => import('./pages/Bookmarks'));
+const History = lazy(() => import('./pages/History'));
 
 // Loading component
 const Loading = () => (
@@ -19,9 +22,11 @@ const Loading = () => (
 );
 
 // Main browser component that handles tabs
-const BrowserTabs = () => {
+const BrowserTabs = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { tabs, activeTabId, addTab, updateTab, setActiveTab } = useTabs();
   const location = useLocation();
+  const { isDarkMode, toggleTheme } = useTheme();
+  const tabContentRef = useRef<TabContentHandle>(null);
 
   // Add initial tab if none exists
   useEffect(() => {
@@ -53,10 +58,10 @@ const BrowserTabs = () => {
 
     return (
       <TabContent
+        ref={tabContentRef}
         key={activeTab.id}
         tabId={activeTab.id}
         url={activeTab.url}
-        favicon={activeTab.favicon}
         onUrlChange={(url) => updateTab(activeTab.id, { url })}
         onTitleChange={(title) => updateTab(activeTab.id, { title })}
         onLoadingChange={(loading) => updateTab(activeTab.id, { loading })}
@@ -70,7 +75,12 @@ const BrowserTabs = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      <TabBar />
+      <Header
+        onMenuClick={onMenuClick}
+        darkMode={isDarkMode}
+        onThemeChange={toggleTheme}
+        tabContentRef={tabContentRef}
+      />
       <Box sx={{ flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
         {renderActiveTab()}
       </Box>
@@ -107,10 +117,11 @@ const App = () => {
               <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <Suspense fallback={<Loading />}>
                   <Routes>
-                    <Route path="/" element={<BrowserTabs />} />
-                    <Route path="/browser" element={<BrowserTabs />} />
+                    <Route path="/" element={<BrowserTabs onMenuClick={() => setSidebarOpen(true)} />} />
+                    <Route path="/browser" element={<BrowserTabs onMenuClick={() => setSidebarOpen(true)} />} />
                     <Route path="/bookmarks" element={<Bookmarks />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/history" element={<History />} />
                   </Routes>
                 </Suspense>
               </Box>
