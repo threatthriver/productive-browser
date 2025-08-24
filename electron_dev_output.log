@@ -1,0 +1,3 @@
+
+> productive-browser@1.0.0 electron:dev
+> concurrently -k "sh -c 'tsc -p electron/tsconfig.json && tsc -p electron/tsconfig.json -w'" "vite --port 4002" "wait-on http://localhost:4002 && electron ."
