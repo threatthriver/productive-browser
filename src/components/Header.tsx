@@ -40,6 +40,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTabs } from '../contexts/TabsContext';
 import ThemeToggle from './ThemeToggle';
 import { TabContentHandle } from './TabContent';
+import { Divider, List } from '@mui/material';
 
 
 interface HeaderProps {
@@ -53,13 +54,19 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, darkMode, onThemeChange, t
     // From TabBar
     const {
         tabs,
+        groups,
         activeTabId,
         addTab,
         closeTab,
         setActiveTab,
         closeOtherTabs,
         duplicateTab,
-        closeAllTabs
+        closeAllTabs,
+        toggleGroupCollapsed,
+        createGroup,
+        addTabToGroup,
+        removeTabFromGroup,
+        closeTabsInGroup,
       } = useTabs();
 
       const tabListRef = useRef<HTMLDivElement>(null);
@@ -69,6 +76,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, darkMode, onThemeChange, t
         tabId?: string;
       } | null>(null);
 
+      const [groupContextMenu, setGroupContextMenu] = useState<{
+        mouseX: number;
+        mouseY: number;
+        groupId?: string;
+      } | null>(null);
+
       const handleContextMenu = (event: React.MouseEvent, tabId: string) => {
         event.preventDefault();
         setContextMenu(
@@ -76,6 +89,19 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, darkMode, onThemeChange, t
             ? { mouseX: event.clientX - 2, mouseY: event.clientY - 4, tabId }
             : null,
         );
+      };
+
+      const handleGroupContextMenu = (event: React.MouseEvent, groupId: string) => {
+        event.preventDefault();
+        setGroupContextMenu(
+          groupContextMenu === null
+            ? { mouseX: event.clientX - 2, mouseY: event.clientY - 4, groupId }
+            : null,
+        );
+      };
+
+      const handleCloseGroupMenu = () => {
+        setGroupContextMenu(null);
       };
 
       const handleCloseMenu = () => {
@@ -176,6 +202,29 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, darkMode, onThemeChange, t
 
       }, [activeTabId, tabs]);
 
+    const tabStyles = {
+        minHeight: 'auto',
+        minWidth: 'auto',
+        px: 1.5,
+        py: 0.75,
+        textTransform: 'none',
+        mr: 0.5,
+        borderTopLeftRadius: '8px',
+        borderTopRightRadius: '8px',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderBottom: 'none',
+        backgroundColor: 'transparent',
+        '&:hover': {
+            backgroundColor: 'action.hover',
+        },
+        '&.Mui-selected': {
+            backgroundColor: 'background.paper',
+            color: 'text.primary',
+            borderBottomColor: 'background.paper'
+        },
+    };
+
 
   return (
     <AppBar position="static" elevation={0} color="default">
@@ -206,35 +255,34 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, darkMode, onThemeChange, t
                     },
                 }}
             >
-                {tabs.map((tab) => (
-                <Tab
-                    key={tab.id}
-                    value={tab.id}
-                    label={renderTabLabel(tab)}
-                    onContextMenu={(e) => handleContextMenu(e, tab.id)}
-                    sx={{
-                        minHeight: 'auto',
-                        minWidth: 'auto',
-                        px: 1.5,
-                        py: 0.75,
-                        textTransform: 'none',
-                        mr: 0.5,
-                        borderTopLeftRadius: '8px',
-                        borderTopRightRadius: '8px',
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderBottom: 'none',
-                        backgroundColor: 'transparent',
-                        '&:hover': {
-                            backgroundColor: 'action.hover',
-                        },
-                        '&.Mui-selected': {
-                            backgroundColor: 'background.paper',
-                            color: 'text.primary',
-                            borderBottomColor: 'background.paper'
-                        },
-                    }}
-                />
+                {/* Render tabs not in a group */}
+                {tabs.filter(tab => !tab.groupId).map((tab) => (
+                    <Tab key={tab.id} value={tab.id} label={renderTabLabel(tab)} onContextMenu={(e) => handleContextMenu(e, tab.id)} sx={tabStyles} />
+                ))}
+
+                {/* Render groups and their tabs */}
+                {groups.map((group) => (
+                    <React.Fragment key={group.id}>
+                        <Box
+                            onClick={() => toggleGroupCollapsed(group.id)}
+                            onContextMenu={(e) => handleGroupContextMenu(e, group.id)}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                p: '4px 8px',
+                                borderRadius: '8px',
+                                backgroundColor: group.color,
+                                color: theme.palette.getContrastText(group.color),
+                                cursor: 'pointer',
+                                mr: 1,
+                            }}
+                        >
+                            <Typography variant="caption" sx={{ fontWeight: 'bold' }}>{group.name}</Typography>
+                        </Box>
+                        {!group.collapsed && tabs.filter(tab => tab.groupId === group.id).map((tab) => (
+                            <Tab key={tab.id} value={tab.id} label={renderTabLabel(tab)} onContextMenu={(e) => handleContextMenu(e, tab.id)} sx={{...tabStyles, borderLeft: `2px solid ${group.color}`}} />
+                        ))}
+                    </React.Fragment>
                 ))}
             </Tabs>
             <Tooltip title="New Tab">
@@ -372,40 +420,103 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, darkMode, onThemeChange, t
         {contextMenu?.tabId && (
           <>
             <MenuItem onClick={() => {
-              closeTab(contextMenu.tabId!);
+              const tabId = contextMenu.tabId!;
+              const groupName = prompt('Enter group name:', 'New Group');
+              if (groupName) {
+                const colors = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#fabed4'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                const newGroupId = createGroup(groupName, randomColor);
+                addTabToGroup(tabId, newGroupId);
+              }
               handleCloseMenu();
             }}>
-              <ListItemIcon>
-                <CloseIconSmall fontSize="small" />
-              </ListItemIcon>
+              <ListItemText>Add to new group</ListItemText>
+            </MenuItem>
+            {groups.length > 0 && (
+                <MenuItem>
+                     <ListItemText>Add to existing group</ListItemText>
+                     {/* This should be a submenu, but for simplicity we'll just list them */}
+                     <List>
+                        {groups.map(group => (
+                            <ListItem key={group.id} onClick={() => {
+                                addTabToGroup(contextMenu.tabId!, group.id);
+                                handleCloseMenu();
+                            }}>
+                                <ListItemText primary={group.name} />
+                            </ListItem>
+                        ))}
+                     </List>
+                </MenuItem>
+            )}
+            {tabs.find(t => t.id === contextMenu.tabId)?.groupId && (
+                <MenuItem onClick={() => {
+                    removeTabFromGroup(contextMenu.tabId!);
+                    handleCloseMenu();
+                }}>
+                    <ListItemText>Remove from group</ListItemText>
+                </MenuItem>
+            )}
+            <Divider />
+            <MenuItem onClick={() => { closeTab(contextMenu.tabId!); handleCloseMenu(); }}>
+              <ListItemIcon> <CloseIconSmall fontSize="small" /> </ListItemIcon>
               <ListItemText>Close</ListItemText>
             </MenuItem>
-            <MenuItem onClick={() => {
-              closeOtherTabs(contextMenu.tabId!);
-              handleCloseMenu();
-            }}>
-              <ListItemIcon>
-                <CloseOthersIcon fontSize="small" />
-              </ListItemIcon>
+            <MenuItem onClick={() => { closeOtherTabs(contextMenu.tabId!); handleCloseMenu(); }}>
+              <ListItemIcon> <CloseOthersIcon fontSize="small" /> </ListItemIcon>
               <ListItemText>Close Other Tabs</ListItemText>
             </MenuItem>
-            <MenuItem onClick={() => {
-              duplicateTab(contextMenu.tabId!);
-              handleCloseMenu();
-            }}>
-              <ListItemIcon>
-                <DuplicateIcon fontSize="small" />
-              </ListItemIcon>
+            <MenuItem onClick={() => { duplicateTab(contextMenu.tabId!); handleCloseMenu(); }}>
+              <ListItemIcon> <DuplicateIcon fontSize="small" /> </ListItemIcon>
               <ListItemText>Duplicate Tab</ListItemText>
             </MenuItem>
-            <MenuItem onClick={() => {
-              closeAllTabs();
-              handleCloseMenu();
-            }}>
-              <ListItemIcon>
-                <CloseIconSmall fontSize="small" />
-              </ListItemIcon>
+            <MenuItem onClick={() => { closeAllTabs(); handleCloseMenu(); }}>
+              <ListItemIcon> <CloseIconSmall fontSize="small" /> </ListItemIcon>
               <ListItemText>Close All Tabs</ListItemText>
+            </MenuItem>
+          </>
+        )}
+      </Menu>
+
+      <Menu
+        open={groupContextMenu !== null}
+        onClose={handleCloseGroupMenu}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          groupContextMenu !== null
+            ? { top: groupContextMenu.mouseY, left: groupContextMenu.mouseX }
+            : undefined
+        }
+      >
+        {groupContextMenu?.groupId && (
+          <>
+            <MenuItem onClick={() => {
+                const newName = prompt('Enter new group name:');
+                if (newName) {
+                    updateGroup(groupContextMenu.groupId!, { name: newName });
+                }
+                handleCloseGroupMenu();
+            }}>
+                <ListItemText>Rename</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={() => {
+                const colors = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#fabed4'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                updateGroup(groupContextMenu.groupId!, { color: randomColor });
+                handleCloseGroupMenu();
+            }}>
+                <ListItemText>Change color</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={() => {
+                deleteGroup(groupContextMenu.groupId!);
+                handleCloseGroupMenu();
+            }}>
+                <ListItemText>Ungroup</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={() => {
+                closeTabsInGroup(groupContextMenu.groupId!);
+                handleCloseGroupMenu();
+            }}>
+                <ListItemText>Close group</ListItemText>
             </MenuItem>
           </>
         )}

@@ -1,16 +1,5 @@
-import Store from 'electron-store';
-
-export interface HistoryEntry {
-  url: string;
-  title: string;
-  timestamp: number;
-}
-
-const store = new Store<{ history: HistoryEntry[] }>({
-  defaults: {
-    history: [],
-  },
-});
+import store from './store';
+import { HistoryEntry } from '../types';
 
 export const addHistory = (entry: Omit<HistoryEntry, 'timestamp'>) => {
   const newEntry: HistoryEntry = {
