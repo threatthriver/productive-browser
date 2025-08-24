@@ -13,6 +13,7 @@ import { useRef } from 'react';
 const Settings = lazy(() => import('./pages/Settings'));
 const Bookmarks = lazy(() => import('./pages/Bookmarks'));
 const History = lazy(() => import('./pages/History'));
+const TabGroupSettings = lazy(() => import('./pages/TabGroupSettings'));
 
 // Loading component
 const Loading = () => (
@@ -122,6 +123,7 @@ const App = () => {
                     <Route path="/bookmarks" element={<Bookmarks />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/history" element={<History />} />
+                    <Route path="/settings/tab-groups" element={<TabGroupSettings />} />
                   </Routes>
                 </Suspense>
               </Box>

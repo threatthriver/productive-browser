@@ -21,7 +21,8 @@ import {
   Close as CloseIcon,
   Star as StarIcon,
   Folder as FolderIcon,
-  Download as DownloadIcon
+  Download as DownloadIcon,
+  FolderOpen as TabGroupIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTabs } from '../contexts/TabsContext';
@@ -43,6 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
     { text: 'History', icon: <HistoryIcon />, path: '/history' },
     { text: 'Downloads', icon: <DownloadIcon />, path: '/downloads' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+    { text: 'Tab Groups', icon: <TabGroupIcon />, path: '/settings/tab-groups' },
   ];
 
   const bookmarks = [
